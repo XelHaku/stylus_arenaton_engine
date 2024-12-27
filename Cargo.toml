@@ -11,19 +11,16 @@ description = "Stylus hello world example"
 [dependencies]
 # stylus-sdk = "0.6.0"
 
-stylus-sdk = { version = "=0.7.0-beta.0" }
+stylus-sdk = { version = "=0.7.0-beta.0", default-features = false }
 hex = "0.4.3"
 dotenv = "0.15.0"
-alloy-primitives = "0.8.13"
-alloy-sol-types = "0.8.13"
-alloy-sol-macro = "0.8.13"
+alloy-primitives = { version = "0.8.13", default-features = false }
+alloy-sol-types = { version = "0.8.13", default-features = false }
+alloy-sol-macro = { version = "0.8.13", default-features = false }
 cfg-if = "0.1"
 derivative = "2.2.0"
 keccak-const = "0.2.0"
 stylus-proc = "0.6.0"
-
-
-
 
 [dev-dependencies]
 tokio = { version = "1.12.0", features = ["full"] }
@@ -47,5 +44,3 @@ strip = true
 lto = true
 panic = "abort"
 opt-level = "s"
-
-
