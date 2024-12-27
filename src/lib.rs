@@ -2,11 +2,11 @@
 extern crate alloc;
 mod constants;
 mod control;
-mod ownable;
+// mod ownable;
 mod structs;
 mod tools;
 
-use crate::ownable::Ownable;
+// use crate::ownable::Ownable;
 use crate::tools::{bytes32_to_string, string_to_bytes32};
 
 use crate::control::AccessControl;
@@ -52,6 +52,10 @@ error NotAuthorized();
         uint64 start_date,
         uint8 sport,
     );
+        // Ownership
+    event OwnershipTransferred(address indexed previous_owner, address indexed new_owner);
+    error OwnableUnauthorizedAccount(address account);
+    error OwnableInvalidOwner(address owner);
 }
 
 /// Represents the ways methods may fail.
@@ -64,13 +68,13 @@ pub enum ATONError {
     AlreadyStarted(AlreadyStarted),
     NotAuthorized(NotAuthorized),
     WrongStatus(WrongStatus),
+    UnauthorizedAccount(OwnableUnauthorizedAccount),
+    InvalidOwner(OwnableInvalidOwner),
 }
 // `ArenatonEngine` will be the entrypoint.
 sol_storage! {
     #[entrypoint]
     pub struct ArenatonEngine {
-        #[borrow]
-        Ownable ownable;
         #[borrow]
         AccessControl control;
 //   uint256 private premium = 200000;
@@ -88,6 +92,8 @@ sol_storage! {
 
  uint256 number;
  address aton_address;
+        address _owner;
+
     }
 
 
@@ -139,7 +145,7 @@ uint64 timestamp;
 
 // Remove or provide Erc20 trait below if needed
 #[public]
-#[inherit(Ownable, AccessControl)]
+#[inherit( AccessControl)]
 impl ArenatonEngine {
   /// Gets the number from storage.
     pub fn number(&self) -> U256 {
@@ -160,7 +166,7 @@ impl ArenatonEngine {
         }
         self.initialized.set(true); // Set initialized to true
         self.aton_address.set(_aton_address);
-        self.ownable._owner.set(msg::sender());
+        self._owner.set(msg::sender());
         self.control._grant_role(FixedBytes::from(constants::DEFAULT_ADMIN_ROLE), msg::sender());
         Ok(true)
     }
@@ -287,6 +293,24 @@ let event_id_bytes = string_to_bytes32(&_event_id);
     Ok(true)
     }
 
+
+   fn owner(&self) -> Address {
+        self._owner.get()
+    }
+
+    fn transfer_ownership(&mut self, new_owner: Address) -> Result<(), ATONError> {
+        self.only_owner()?;
+
+        if new_owner.is_zero() {
+            return Err(ATONError::InvalidOwner(OwnableInvalidOwner {
+                owner: Address::ZERO,
+            }));
+        }
+
+        self._transfer_ownership(new_owner);
+
+        Ok(())
+    }
 }
 
 impl ArenatonEngine {
@@ -336,5 +360,25 @@ impl ArenatonEngine {
 
         // Your logic
         Ok(true)
+    }
+
+        pub fn only_owner(&self) -> Result<(), ATONError> {
+        let account = msg::sender();
+        if self._owner.get() != account {
+            return Err(ATONError::UnauthorizedAccount(
+                OwnableUnauthorizedAccount { account },
+            ));
+        }
+
+        Ok(())
+    }
+
+    pub fn _transfer_ownership(&mut self, new_owner: Address) {
+        let previous_owner = self._owner.get();
+        self._owner.set(new_owner);
+        evm::log(OwnershipTransferred {
+            previous_owner,
+            new_owner,
+        });
     }
 }
