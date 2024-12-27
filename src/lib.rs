@@ -225,11 +225,60 @@ impl ArenatonEngine {
             Err(e) => Err(false),
         };
 
-        let _ = self.stake(_event_id, _amount, _team);
+        let _ = self._add_stake(_event_id, _amount, _team);
         Ok(true)
     }
     /// Stake with ATON
-    pub fn stake(
+ 
+    pub fn stake_aton(
+        &mut self,
+        _event_id: String,
+        _amount: U256,
+        _team: u8,
+    ) -> Result<bool, ATONError> {
+        let _player = msg::sender();
+
+        // Parse the const &str as a local Address variable
+        let aton_address = Address::parse_checksummed(ATON, None).expect("Invalid address");
+        let aton_contract = IATON::new(aton_address);
+
+        let config = Call::new_in(self);
+
+        let _ = match aton_contract.transfer_from(config, _player, contract::address(), _amount) {
+            Ok(_) => Ok(true),
+            Err(e) => Err(false),
+        };
+
+        let _ = self._add_stake(_event_id, _amount, _team);
+        // Your logic
+        Ok(true)
+    }
+
+    pub fn close_event(&mut self, _event_id: String, _winner: u8) -> Result<bool, ATONError> {
+             match   self.control.only_role(constants::ORACLE_ROLE.into()) {
+        Ok(_) => {},
+        Err(e) => return Err(ATONError::NotAuthorized(NotAuthorized {})),
+    };
+let event_id_bytes = string_to_bytes32(&_event_id);
+        // 2) "Borrow" a mutable reference to the storage for `events[event_id_bytes]`
+        let mut e = self.events.setter(event_id_bytes);
+
+        if e.status.get() != Uint::<8, 1>::from(1u8) {
+            return Err(ATONError::WrongStatus(WrongStatus{}));
+        }
+        // 3) Set fields in storage
+        e.winner.set(Uint::<8, 1>::from(_winner));
+        e.status.set(Uint::<8, 1>::from(2u8));
+
+
+
+    Ok(true)
+    }
+
+}
+
+impl ArenatonEngine {
+   pub fn _add_stake(
         &mut self,
         _event_id: String,
         _amount: U256,
@@ -276,54 +325,4 @@ impl ArenatonEngine {
         // Your logic
         Ok(true)
     }
-
-    pub fn stake_aton(
-        &mut self,
-        _event_id: String,
-        _amount: U256,
-        _team: u8,
-    ) -> Result<bool, ATONError> {
-        let _player = msg::sender();
-
-        // Parse the const &str as a local Address variable
-        let aton_address = Address::parse_checksummed(ATON, None).expect("Invalid address");
-        let aton_contract = IATON::new(aton_address);
-
-        let config = Call::new_in(self);
-
-        let _ = match aton_contract.transfer_from(config, _player, contract::address(), _amount) {
-            Ok(_) => Ok(true),
-            Err(e) => Err(false),
-        };
-
-        let _ = self.stake(_event_id, _amount, _team);
-        // Your logic
-        Ok(true)
-    }
-
-    pub fn close_event(&mut self, _event_id: String, _winner: u8) -> Result<bool, ATONError> {
-             match   self.control.only_role(constants::ORACLE_ROLE.into()) {
-        Ok(_) => {},
-        Err(e) => return Err(ATONError::NotAuthorized(NotAuthorized {})),
-    };
-let event_id_bytes = string_to_bytes32(&_event_id);
-        // 2) "Borrow" a mutable reference to the storage for `events[event_id_bytes]`
-        let mut e = self.events.setter(event_id_bytes);
-
-        if e.status.get() != Uint::<8, 1>::from(1u8) {
-            return Err(ATONError::WrongStatus(WrongStatus{}));
-        }
-        // 3) Set fields in storage
-        e.winner.set(Uint::<8, 1>::from(_winner));
-        e.status.set(Uint::<8, 1>::from(2u8));
-
-
-
-    Ok(true)
-    }
-
-}
-
-impl ArenatonEngine {
-    // Additional private or internal functions
 }
