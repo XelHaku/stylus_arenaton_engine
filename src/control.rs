@@ -8,7 +8,7 @@
 // Imported packages
 use crate::constants;
 use alloy_primitives::FixedBytes;
-use alloy_primitives::{Address, B256, U256};
+use alloy_primitives::{Address, B256};
 use alloy_sol_types::sol;
 use stylus_sdk::{evm, msg, prelude::*};
 

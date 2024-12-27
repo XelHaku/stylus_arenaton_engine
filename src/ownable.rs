@@ -6,7 +6,7 @@
 //! Note that this code is unaudited and not fit for production use.
 
 // Imported packages
-use alloy_primitives::{Address, U256};
+use alloy_primitives::Address;
 use alloy_sol_types::sol;
 use stylus_sdk::{evm, msg, prelude::*};
 
