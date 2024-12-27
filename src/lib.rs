@@ -65,7 +65,6 @@ pub enum ATONError {
     NotAuthorized(NotAuthorized),
     WrongStatus(WrongStatus),
 }
-const ATON: &str = "0xa6e41ffd769491a42a6e5ce453259b93983a22ef";
 // `ArenatonEngine` will be the entrypoint.
 sol_storage! {
     #[entrypoint]
@@ -87,6 +86,8 @@ sol_storage! {
 
         bool initialized ;
 
+ uint256 number;
+ address aton_address;
     }
 
 
@@ -140,13 +141,25 @@ uint64 timestamp;
 #[public]
 #[inherit(Ownable, AccessControl)]
 impl ArenatonEngine {
+  /// Gets the number from storage.
+    pub fn number(&self) -> U256 {
+        self.number.get()
+    }
 
-       pub fn initialize_contract(&mut self) -> Result<bool, ATONError> {
+
+
+    /// Increments `number` and updates its value in storage.
+    pub fn increment(&mut self) {
+        let number = self.number.get();
+        self.number.set(number + U256::from(1));
+    }
+    pub fn initialize_arenaton_engine(&mut self, _aton_address: Address) -> Result<bool, ATONError> {
         if self.initialized.get() {
             // Access the value using .get()
             return Err(ATONError::AlreadyInitialized(AlreadyInitialized {})); // Add the error struct
         }
         self.initialized.set(true); // Set initialized to true
+        self.aton_address.set(_aton_address);
         self.ownable._owner.set(msg::sender());
         self.control._grant_role(FixedBytes::from(constants::DEFAULT_ADMIN_ROLE), msg::sender());
         Ok(true)
@@ -215,8 +228,7 @@ impl ArenatonEngine {
         let _player = msg::sender();
 
         // Parse the const &str as a local Address variable
-        let aton_address = Address::parse_checksummed(ATON, None).expect("Invalid address");
-        let aton_contract = IATON::new(aton_address);
+        let aton_contract = IATON::new(self.aton_address.get());
 
         let config = Call::new_in(self).value(_amount);
 
@@ -239,8 +251,8 @@ impl ArenatonEngine {
         let _player = msg::sender();
 
         // Parse the const &str as a local Address variable
-        let aton_address = Address::parse_checksummed(ATON, None).expect("Invalid address");
-        let aton_contract = IATON::new(aton_address);
+        let aton_contract = IATON::new(self.aton_address.get());
+
 
         let config = Call::new_in(self);
 

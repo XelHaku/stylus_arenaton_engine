@@ -170,12 +170,7 @@ impl AccessControl {
         *self._roles.getter(role).admin_role
     }
 
-    // pub fn grant_role(&mut self, role: B256, account: Address) -> Result<(), ATONError> {
-    //     let admin_role = self.get_role_admin(role);
-    //     self.only_role(admin_role)?;
-    //     self._grant_role(role, account);
-    //     Ok(())
-    // }
+
 
     pub fn grant_oracle_role(&mut self, account: Address) -> Result<(), ATONError> {
         let admin_role = self.get_role_admin(FixedBytes::from(constants::ARENATON_ENGINE_ROLE));
