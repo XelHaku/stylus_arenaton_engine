@@ -1,0 +1,67 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Launch",
+      "program": "${workspaceFolder}/<program>",
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in library 'stylus_hello_world'",
+      "cargo": {
+        "args": ["test", "--no-run", "--lib", "--package=stylus-hello-world"],
+        "filter": {
+          "name": "stylus_hello_world",
+          "kind": "lib"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug executable 'stylus-arenaton'",
+      "cargo": {
+        "args": [
+          "build",
+          "--bin=stylus-arenaton",
+          "--package=stylus-hello-world"
+        ],
+        "filter": {
+          "name": "stylus-arenaton",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in executable 'stylus-arenaton'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--bin=stylus-arenaton",
+          "--package=stylus-hello-world"
+        ],
+        "filter": {
+          "name": "stylus-arenaton",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

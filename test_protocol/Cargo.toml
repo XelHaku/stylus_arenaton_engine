@@ -1,0 +1,39 @@
+[package]
+name = "test_contracts"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dotenv = "0.15.0"
+ethers = { version = "2.0.14", features = ["abigen"] }
+tokio = { version = "1.28.2", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+eyre = "0.6"
+serde = { version = "1.0", features = ["derive"] } 
+serde_json = "1.0"
+alloy-primitives = "0.8.19"
+chrono = "0.4.39"
+
+# [[bin]]
+# name = "main"
+# path = "src/main.rs"
+
+
+# [[bin]]
+# name = "debug_mint_aton"
+# path = "src/debug_mint_aton/mod.rs"
+
+
+# [[bin]]
+# name = "balance_of"
+# path = "src/balance_of/mod.rs"
+
+# [[bin]]
+# name = "name"
+# path = "src/name/mod.rs"
+
+# [[bin]]
+# name = "call_contract"
+# path = "src/balance_of/mod.rs"
+

@@ -1,0 +1,341 @@
+File: ./balance_of/mod.rs
+--------------------
+use ethers::prelude::*;
+use ethers::providers::{Http, Provider};
+use ethers::types::{Address, U256};
+use ethers::contract::Contract;
+use ethers::abi::Abi;
+use dotenv::dotenv;
+use std::sync::Arc;
+use std::fs;
+use std::path::Path;
+
+// Import necessary eyre types
+use eyre::{Result, WrapErr};
+
+// Import tracing for logging
+use tracing::{info, debug, error};
+use tracing_subscriber;
+
+pub async fn balance_of(owner_address_str: &str) -> Result<()> {
+    // Load environment variables
+    dotenv().ok();
+    info!("Environment variables loaded");
+
+    // Get RPC URL from environment or fallback to default
+    let rpc_url = std::env::var("RPC_URL")
+        .unwrap_or_else(|_| "http://127.0.0.1:8547".into());
+    info!("Using RPC URL: {}", rpc_url);
+
+    let provider = Provider::<Http>::try_from(rpc_url)
+        .wrap_err("Failed to create provider")?;
+    info!("Provider initialized");
+
+    // Get contract address from environment or fallback to default
+    let contract_address_str = std::env::var("ERC20ATON_ADDRESS")
+        .unwrap_or_else(|_| "0x7e32b54800705876d3b5cfbc7d9c226a211f7c1a".into());
+    info!("Using contract address: {}", contract_address_str);
+
+    let contract_address: Address = contract_address_str
+        .parse()
+        .wrap_err("Invalid contract address")?;
+    info!("Contract address parsed: {:?}", contract_address);
+
+    // Load ABI dynamically from file
+    let abi_path = Path::new("src/abi/IATON.json"); // Adjust path to match your project structure
+    let abi_json = fs::read_to_string(abi_path).wrap_err("Failed to read ABI file")?;
+    info!("ABI file loaded from: {:?}", abi_path);
+
+    let abi: Abi = serde_json::from_str(&abi_json)
+        .wrap_err("Error parsing ABI from file")?;
+    info!("Contract ABI parsed");
+
+    // Initialize the contract instance
+    let contract = Contract::new(contract_address, abi, Arc::new(provider));
+    info!("Contract instance created");
+
+    // Parse the owner address passed as argument
+    let owner_address: Address = owner_address_str
+        .parse()
+        .wrap_err("Invalid owner address")?;
+    info!("Using owner address: {:?}", owner_address);
+
+    // Call the "balanceOf" function on the smart contract
+    info!("Calling 'balanceOf' function on the contract");
+    let balance: U256 = contract
+        .method::<_, U256>("balanceOf", owner_address)?
+        .call()
+        .await
+        .wrap_err("Failed to call 'balanceOf' function")?;
+    info!("Contract 'balanceOf' function called successfully");
+
+    println!("Balance of {}: {}", owner_address, balance);
+
+    Ok(())
+}
+
+#[tokio::main]
+async fn main() {
+    // Initialize tracing subscriber for logging
+    tracing_subscriber::fmt::init();
+
+    // Example owner address (replace with an actual address to query)
+    let address = "0x7e32b54800705876d3b5cfbc7d9c226a211f7c1a";
+
+    // Run the `balance_of` function and handle any errors
+    if let Err(err) = balance_of(address).await {
+        error!("Error: {:?}", err);
+    }
+}
+
+
+File: ./swap/mod.rs
+--------------------
+// debug_mint_aton/mod.rs
+use ethers::prelude::*;
+use ethers::providers::{Http, Provider};
+use ethers::signers::LocalWallet;
+use ethers::types::Address;
+use ethers::contract::Contract;
+use dotenv::dotenv;
+use std::sync::Arc;
+use ethers::abi::Abi;
+
+// Add this line to import the necessary eyre types
+use eyre::{Result, WrapErr}; 
+
+pub async fn debug_mint_aton() -> Result<()> { // Use eyre::Result and make it public
+    // Load environment variables
+    dotenv().ok();
+
+    // RPC URL (Replace with your Ethereum node URL)
+    let rpc_url = std::env::var("RPC_URL").unwrap_or_else(|_| "http://127.0.0.1:8547".into());
+    let provider = Provider::<Http>::try_from(rpc_url)?;
+
+    // Private Key (Replace with your private key, securely load it from ENV in production)
+    let private_key = std::env::var("PRIVATE_KEY_NODE")
+        .expect("Please set the PRIVATE_KEY_NODE environment variable");
+    let wallet: LocalWallet = private_key
+        .parse::<LocalWallet>()?
+        .with_chain_id(1337u64); // Use the correct chain ID 
+
+    // Combine wallet and provider
+    let signer = Arc::new(SignerMiddleware::new(provider, wallet));
+
+    // Contract address (Replace with your contract address)
+    let contract_address: Address = "0x7e32b54800705876d3b5cfbc7d9c226a211f7c1a".parse()?; 
+
+    // Contract ABI (Replace with the actual ABI)
+    let abi: Abi = serde_json::from_str(r#"[{"inputs":[],"name":"debugMintAton","outputs":[],"stateMutability":"nonpayable","type":"function"}]"#)
+        .wrap_err("Error parsing ABI")?; 
+
+    // Initialize the contract instance
+    let contract = Contract::new(contract_address, abi, signer.clone());
+
+    // Call the "debugMintAton" function on the smart contract
+    let method = contract.method::<_, ()>("debugMintAton", ())?; 
+    let tx = method
+        .send()
+        .await?; 
+
+    println!("Transaction hash: {:?}", tx.tx_hash());
+
+    // Wait for the transaction to be mined
+    let receipt = tx.await?;
+    println!("Transaction receipt: {:?}", receipt);
+
+    Ok(())
+}
+
+#[tokio::main]
+async fn main() {
+    // This will only run when the module is called by itself
+    if let Err(err) = debug_mint_aton().await { 
+        eprintln!("Error: {:?}", err);
+    }
+}
+
+File: ./main.rs
+--------------------
+// src/main.rs
+
+// Import the eyre crate for error handling
+use eyre::Result;
+
+// Declare the modules
+mod debug_mint_aton;
+mod name;
+mod balance_of;
+
+// Import the functions from the modules
+use debug_mint_aton::debug_mint_aton;
+use name::name;
+use balance_of::balance_of;
+#[tokio::main]
+async fn main() -> Result<()> {
+    // Call the functions and propagate errors using `?`
+    // debug_mint_aton().await?;
+    name().await?;
+
+
+    let player1 = "0x7e32b54800705876d3b5cfbc7d9c226a211f7c1a";
+    balance_of(player1).await?;
+
+
+    // addEvent(abc,1750000000).await?
+// stake(ATON,player2,team1).await?
+   
+    // swap
+  
+    Ok(())
+}
+
+
+File: ./debug_mint_aton/mod.rs
+--------------------
+// debug_mint_aton/mod.rs
+use ethers::prelude::*;
+use ethers::providers::{Http, Provider};
+use ethers::signers::LocalWallet;
+use ethers::types::Address;
+use ethers::contract::Contract;
+use dotenv::dotenv;
+use std::sync::Arc;
+use ethers::abi::Abi;
+
+// Add this line to import the necessary eyre types
+use eyre::{Result, WrapErr}; 
+
+pub async fn debug_mint_aton() -> Result<()> { // Use eyre::Result and make it public
+    // Load environment variables
+    dotenv().ok();
+
+    // RPC URL (Replace with your Ethereum node URL)
+    let rpc_url = std::env::var("RPC_URL").unwrap_or_else(|_| "http://127.0.0.1:8547".into());
+    let provider = Provider::<Http>::try_from(rpc_url)?;
+
+    // Private Key (Replace with your private key, securely load it from ENV in production)
+    let private_key = std::env::var("PRIVATE_KEY")
+        .expect("Please set the PRIVATE_KEY environment variable");
+    let wallet: LocalWallet = private_key
+        .parse::<LocalWallet>()?
+        .with_chain_id(1337u64); // Use the correct chain ID 
+
+    // Combine wallet and provider
+    let signer = Arc::new(SignerMiddleware::new(provider, wallet));
+
+    // Contract address (Replace with your contract address)
+    let contract_address: Address = "0x7e32b54800705876d3b5cfbc7d9c226a211f7c1a".parse()?; 
+
+    // Contract ABI (Replace with the actual ABI)
+    let abi: Abi = serde_json::from_str(r#"[{"inputs":[],"name":"debugMintAton","outputs":[],"stateMutability":"nonpayable","type":"function"}]"#)
+        .wrap_err("Error parsing ABI")?; 
+
+    // Initialize the contract instance
+    let contract = Contract::new(contract_address, abi, signer.clone());
+
+    // Call the "debugMintAton" function on the smart contract
+    let method = contract.method::<_, ()>("debugMintAton", ())?; 
+    let tx = method
+        .send()
+        .await?; 
+
+    println!("Transaction hash: {:?}", tx.tx_hash());
+
+    // Wait for the transaction to be mined
+    let receipt = tx.await?;
+    println!("Transaction receipt: {:?}", receipt);
+
+    Ok(())
+}
+
+#[tokio::main]
+async fn main() {
+    // This will only run when the module is called by itself
+    if let Err(err) = debug_mint_aton().await { 
+        eprintln!("Error: {:?}", err);
+    }
+}
+
+File: ./name/mod.rs
+--------------------
+use ethers::prelude::*;
+use ethers::providers::{Http, Provider};
+use ethers::types::Address;
+use ethers::contract::Contract;
+use ethers::abi::Abi;
+use dotenv::dotenv;
+use std::sync::Arc;
+use std::fs;
+use std::path::Path;
+
+// Import necessary eyre types
+use eyre::{Result, WrapErr};
+
+// Import tracing for logging
+use tracing::{info, debug, error};
+use tracing_subscriber;
+
+pub async fn name() -> Result<()> {
+    // Load environment variables
+    dotenv().ok();
+    info!("Environment variables loaded");
+
+    // RPC URL (Replace with your Ethereum node URL)
+    let rpc_url = std::env::var("RPC_URL")
+        .unwrap_or_else(|_| "http://127.0.0.1:8547".into());
+    info!("Using RPC URL: {}", rpc_url);
+
+    let provider = Provider::<Http>::try_from(rpc_url)
+        .wrap_err("Failed to create provider")?;
+    info!("Provider initialized");
+
+    // Contract address (Replace with your contract address)
+    let contract_address_str = std::env::var("ERC20ATON_ADDRESS")
+        .unwrap_or_else(|_| "0x7e32b54800705876d3b5cfbc7d9c226a211f7c1a".into());
+    info!("Using contract address: {}", contract_address_str);
+
+    let contract_address: Address = contract_address_str
+        .parse()
+        .wrap_err("Invalid contract address")?;
+    info!("Contract address parsed: {:?}", contract_address);
+
+    // Load ABI from file
+    let abi_path = Path::new("src/abi/IATON.json");
+    let abi_json = fs::read_to_string(abi_path).wrap_err("Failed to read ABI file")?;
+    info!("ABI file loaded from: {:?}", abi_path);
+
+    let abi: Abi = serde_json::from_str(&abi_json)
+        .wrap_err("Error parsing ABI from file")?;
+    info!("Contract ABI parsed");
+
+    // Initialize the contract instance
+    let contract = Contract::new(contract_address, abi, Arc::new(provider));
+    info!("Contract instance created");
+
+    // Call the "name" function on the smart contract
+    info!("Calling 'name' function on the contract");
+    let contract_name: String = contract
+        .method::<_, String>("name", ())?
+        .call()
+        .await
+        .wrap_err("Failed to call 'name' function")?;
+    info!("Contract 'name' function called successfully");
+
+    println!("Contract Name: {}", contract_name);
+
+    Ok(())
+}
+
+#[tokio::main]
+async fn main() {
+    // Initialize tracing subscriber for logging
+    tracing_subscriber::fmt::init();
+
+    // Run the `name` function and handle any errors
+    if let Err(err) = name().await {
+        error!("Error: {:?}", err);
+    }
+}
+
+
