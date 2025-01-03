@@ -4,7 +4,6 @@ pub const ARENATON_ENGINE_ROLE: [u8; 32] = [
 ];
 pub const DEFAULT_ADMIN_ROLE: [u8; 32] = [0; 32];
 
-
 pub const ORACLE_ROLE: [u8; 32] = [
     3, 11, 4, 5, 8, 19, 16, 23, 32, 3, 64, 7, 128, 13, 1, 17, 37, 41, 47, 29, 31, 53, 79, 61, 43,
     83, 71, 59, 73, 89, 67, 97,
