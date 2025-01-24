@@ -34,6 +34,7 @@ Each folder includes smart contracts, **WASM** files, and **Rust-based implement
 
 ![System Architecture](interfaces/smart_contracts.png )
 
+
 ---
 
 ## 🔧 Core Modules
@@ -66,7 +67,7 @@ Follow these steps to set up the Arenaton platform locally:
 
 ### 2. **Clone the Repository**
    ```bash
-   git clone https://github.com/OffchainLabs/stylus_arenaton_smart_contracts_tests.git
+   git clone https://github.com/XelHaku/stylus_arenaton_smart_contracts_tests.git
    cd stylus_arenaton_smart_contracts_tests
    ```
 
@@ -89,6 +90,25 @@ Follow these steps to set up the Arenaton platform locally:
 
 ---
 
+## ⚙️ Usage
+
+### Deploy Contracts:
+   ```bash
+   ./local_deploy.sh
+   ```
+
+### Interact with Protocol:
+   ```bash
+   cargo run
+   ```
+
+### Run Tests:
+   Navigate to the `test_protocol/` directory and execute:
+   ```bash
+   cargo run
+   ```
+
+---
 
 ## 💡 Highlights of Arenaton Technology
 
